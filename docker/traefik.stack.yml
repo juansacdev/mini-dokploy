@@ -1,0 +1,61 @@
+# Full stack: Traefik + Mini-Dokploy itself (both as Docker Swarm services).
+# Deploy:  docker stack deploy -c docker/traefik.stack.yml mini-dokploy   (use `make up`)
+#
+# - exposedByDefault=false → each service opts in with traefik.enable=true.
+# - The mini-dokploy app is reached at  http://dokploy.127.0.0.1.sslip.io  (via Traefik).
+# - Traefik dashboard: http://localhost:8080
+# - Services created by the orchestrator join `mini-dokploy-net` and Traefik routes them.
+
+services:
+  traefik:
+    image: traefik:v3
+    command:
+      - --providers.swarm=true
+      - --providers.swarm.exposedByDefault=false
+      - --providers.swarm.network=mini-dokploy-net
+      - --entrypoints.web.address=:80
+      - --api.insecure=true
+    ports:
+      - '80:80'
+      - '8080:8080'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - mini-dokploy-net
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
+  mini-dokploy:
+    image: mini-dokploy:latest # built locally by `make build` / `make up`
+    environment:
+      - DATABASE_URL=/data/mini-dokploy.db
+      - PORT=3000
+    volumes:
+      # RW socket: the app drives the host daemon (build images, create/remove services).
+      # `docker build` ships the build context to the daemon, so the clone can live in the
+      # container's own /tmp — no shared host path needed.
+      - /var/run/docker.sock:/var/run/docker.sock
+      - mini-dokploy-data:/data # Persist the SQLite DB.
+    networks:
+      - mini-dokploy-net
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      # NOTE: in Swarm, Traefik reads SERVICE labels → they must go under deploy.labels
+      # (top-level `labels:` would be container labels, which the swarm provider ignores).
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.dokploy.rule=Host(`dokploy.127.0.0.1.sslip.io`)
+        - traefik.http.routers.dokploy.entrypoints=web
+        - traefik.http.services.dokploy.loadbalancer.server.port=3000
+
+# External network (fixed name, created via `make network-create` before deploy).
+networks:
+  mini-dokploy-net:
+    external: true
+
+volumes:
+  mini-dokploy-data:
