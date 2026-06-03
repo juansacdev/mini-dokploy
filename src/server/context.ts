@@ -1,8 +1,9 @@
 import type { CreateNextContextOptions } from "@trpc/server/adapters/next"
+import { db } from "./db"
 
-// Per-request context. Empty for now — request-scoped state is added as features land.
+// Per-request context. Exposes the database handle to every procedure.
 export const createContext = async (_opts: CreateNextContextOptions) => {
-  return {}
+  return { db }
 }
 
 export type TContext = Awaited<ReturnType<typeof createContext>>
