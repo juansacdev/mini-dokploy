@@ -6,7 +6,7 @@ import fs from 'node:fs'
 import { execFile } from 'node:child_process'
 import { db } from './db'
 import { deployment, TDeployment, DeploymentStatus } from './db/schema'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { TRPCError } from '@trpc/server'
 
 // step 1
@@ -80,17 +80,18 @@ const executeCommand = async (command: string, args: string[]):
   })
 }
 
-export const list = async (): Promise<TDeployment[]> => {
-  return db.select().from(deployment)
+export const list = async (userId: string): Promise<TDeployment[]> => {
+  return db.select().from(deployment).where(eq(deployment.userId, userId))
 }
 
-export const deploy = async (input: TCreateDeploymentInput): Promise<TDeployment> => {
+export const deploy = async (input: TCreateDeploymentInput, userId: string): Promise<TDeployment> => {
   const slug = sanitizeStr(input.serviceName)
   const imageTag = `${slug}:latest`
 
   const deploymentRow = db
     .insert(deployment)
     .values({
+      userId,
       status: DeploymentStatus.DEPLOYING,
       dockerfile: input.dockerfilePath,
       port: input.port,
@@ -161,11 +162,11 @@ export const deploy = async (input: TCreateDeploymentInput): Promise<TDeployment
   }
 }
 
-export const remove = async (id: string) => {
+export const remove = async (id: string, userId: string) => {
   const deploymentRow = db
     .select({ id: deployment.id, serviceName: deployment.serviceName })
     .from(deployment)
-    .where(eq(deployment.id, id))
+    .where(and(eq(deployment.id, id), eq(deployment.userId, userId)))
     .get()
 
   if (!deploymentRow) throw new TRPCError({ code: 'NOT_FOUND', message: `Deployment with id ${id} not found` })
@@ -185,11 +186,11 @@ export const remove = async (id: string) => {
   return db.delete(deployment).where(eq(deployment.id, id)).run()
 }
 
-export const redeploy = async (id: string) => {
+export const redeploy = async (id: string, userId: string) => {
   const deploymentRow = db
     .select()
     .from(deployment)
-    .where(eq(deployment.id, id))
+    .where(and(eq(deployment.id, id), eq(deployment.userId, userId)))
     .get()
 
   if (!deploymentRow) throw new TRPCError({ code: 'NOT_FOUND', message: `Deployment with id ${id} not found` })

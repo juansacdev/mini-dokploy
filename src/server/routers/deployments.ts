@@ -1,19 +1,22 @@
-import { router, publicProcedure } from "../trpc"
+import { router, protectedProcedure } from "../trpc"
 import { createDeploymentSchema, deploymentIdSchema } from "../db/definitions/deployment"
 import * as orchestrator from "../orchestrator"
 
+// Every procedure is protected and scoped to the logged-in user (data-layer multi-tenancy).
 export const deploymentsRouter = router({
-  list: publicProcedure.query(() => orchestrator.list()),
-
-  create: publicProcedure.input(createDeploymentSchema).mutation(({ input }) =>
-    orchestrator.deploy(input),
+  list: protectedProcedure.query(({ ctx }) =>
+    orchestrator.list(ctx.user.id)
   ),
 
-  redeploy: publicProcedure.input(deploymentIdSchema).mutation(({ input }) =>
-    orchestrator.redeploy(input.id),
+  create: protectedProcedure.input(createDeploymentSchema).mutation(({ ctx, input }) =>
+    orchestrator.deploy(input, ctx.user.id),
   ),
 
-  remove: publicProcedure.input(deploymentIdSchema).mutation(({ input }) =>
-    orchestrator.remove(input.id),
+  redeploy: protectedProcedure.input(deploymentIdSchema).mutation(({ ctx, input }) =>
+    orchestrator.redeploy(input.id, ctx.user.id),
+  ),
+
+  remove: protectedProcedure.input(deploymentIdSchema).mutation(({ ctx, input }) =>
+    orchestrator.remove(input.id, ctx.user.id),
   ),
 })

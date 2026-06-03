@@ -1,6 +1,7 @@
 import { useState } from "react"
 import type { FormEvent } from "react"
 import { trpc } from "../lib/trpc"
+import { authClient } from "../lib/auth-client"
 import { DeploymentStatus, TDeploymentStatus } from '../server/db/schema'
 
 type TLabelRow = { key: string; value: string }
@@ -47,8 +48,52 @@ const pageStyle: React.CSSProperties = { maxWidth: 860, margin: "40px auto", pad
 
 const Req = () => <span style={{ color: "#cf222e" }}> *</span>
 
+// ─────────────── Auth (sign in / sign up) ───────────────
+function AuthGate() {
+  const [mode, setMode] = useState<"signin" | "signup">("signin")
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const [pending, setPending] = useState(false)
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault()
+    setError("")
+    setPending(true)
+    const result =
+      mode === "signup"
+        ? await authClient.signUp.email({ name, email, password })
+        : await authClient.signIn.email({ email, password })
+    setPending(false)
+    if (result.error) setError(result.error.message ?? "Something went wrong")
+    // on success, the useSession() in Home updates and renders the dashboard
+  }
+
+  return (
+    <main style={{ ...pageStyle, maxWidth: 380 }}>
+      <h1 style={{ fontSize: 22 }}>Mini-Dokploy</h1>
+      <form onSubmit={submit} style={{ display: "grid", gap: 12, border: "1px solid #d0d7de", borderRadius: 10, padding: 18 }}>
+        <h2 style={{ fontSize: 16, margin: 0 }}>{mode === "signup" ? "Create account" : "Sign in"}</h2>
+        {mode === "signup" && (
+          <input style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" required />
+        )}
+        <input style={inputStyle} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" type="email" required />
+        <input style={inputStyle} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password" required />
+        <button type="submit" disabled={pending} style={{ ...btnStyle, background: "#1f883d", color: "#fff", border: "1px solid #1a7f37" }}>
+          {pending ? "…" : mode === "signup" ? "Create account" : "Sign in"}
+        </button>
+        {error && <p style={{ color: "#cf222e", fontSize: 13, margin: 0 }}>{error}</p>}
+        <button type="button" onClick={() => setMode(mode === "signup" ? "signin" : "signup")} style={{ ...btnStyle, background: "none", border: "none", color: "#0969da", padding: 0, textAlign: "left" }}>
+          {mode === "signup" ? "Already have an account? Sign in" : "No account? Create one"}
+        </button>
+      </form>
+    </main>
+  )
+}
+
 // ─────────────── Dashboard (deployments) ───────────────
-function Dashboard() {
+function Dashboard({ email }: { email: string }) {
   const utils = trpc.useUtils()
   const invalidate = () => utils.deployments.list.invalidate()
 
@@ -86,6 +131,9 @@ function Dashboard() {
     <main style={pageStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h1 style={{ fontSize: 22 }}>Mini-Dokploy</h1>
+        <div style={{ fontSize: 13, color: "#656d76" }}>
+          {email} · <button onClick={() => authClient.signOut()} style={{ ...btnStyle, padding: "4px 10px" }}>Sign out</button>
+        </div>
       </div>
 
       {/* form */}
@@ -181,5 +229,9 @@ function Dashboard() {
 }
 
 export default function Home() {
-  return <Dashboard />
+  const { data: session, isPending } = authClient.useSession()
+
+  if (isPending) return <main style={pageStyle}><p style={{ color: "#656d76" }}>Loading…</p></main>
+  if (!session) return <AuthGate />
+  return <Dashboard email={session.user.email} />
 }

@@ -32,6 +32,8 @@ services:
     environment:
       - DATABASE_URL=/data/mini-dokploy.db
       - PORT=3000
+      - BETTER_AUTH_SECRET=dev-secret-change-in-prod
+      - BETTER_AUTH_URL=http://dokploy.127.0.0.1.sslip.io
     volumes:
       # RW socket: the app drives the host daemon (build images, create/remove services).
       # `docker build` ships the build context to the daemon, so the clone can live in the

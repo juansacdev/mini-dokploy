@@ -1,9 +1,12 @@
 import type { CreateNextContextOptions } from "@trpc/server/adapters/next"
+import { fromNodeHeaders } from "better-auth/node"
 import { db } from "./db"
+import { auth } from "./auth"
 
-// Per-request context. Exposes the database handle to every procedure.
-export const createContext = async (_opts: CreateNextContextOptions) => {
-  return { db }
+// Per-request context. Resolves the logged-in user from the Better Auth session.
+export const createContext = async (opts: CreateNextContextOptions) => {
+  const session = await auth.api.getSession({ headers: fromNodeHeaders(opts.req.headers) })
+  return { db, user: session?.user ?? null }
 }
 
 export type TContext = Awaited<ReturnType<typeof createContext>>
