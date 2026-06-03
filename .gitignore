@@ -1,0 +1,21 @@
+node_modules/
+.next/
+out/
+build/
+
+# SQLite
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# env
+.env
+.env*.local
+
+# misc
+.DS_Store
+*.log
+
+# TS build info
+*.tsbuildinfo

@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+build
+*.db
+*.db-shm
+*.db-wal
+.git
+.env
+.env*.local
+.DS_Store
+*.log
