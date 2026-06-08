@@ -104,6 +104,7 @@ function Dashboard({ email }: { email: string }) {
 
   const [name, setName] = useState("")
   const [repositoryUrl, setRepositoryUrl] = useState("")
+  const [branch, setBranch] = useState("")
   const [dockerfilePath, setDockerfilePath] = useState("")
   const [port, setPort] = useState("")
   const [labels, setLabels] = useState<TLabelRow[]>([{ key: "", value: "" }])
@@ -122,6 +123,7 @@ function Dashboard({ email }: { email: string }) {
       serviceName: name,
       repositoryUrl,
       dockerfilePath,
+      branch,
       port: Number(port),
       customLabels: Object.keys(customLabels).length ? customLabels : undefined,
     })
@@ -146,6 +148,13 @@ function Dashboard({ email }: { email: string }) {
           <label style={labelStyle}>Repository URL<Req /></label>
           <input style={inputStyle} value={repositoryUrl} onChange={(e) => setRepositoryUrl(e.target.value)} placeholder="https://github.com/user/repo.git" required />
         </div>
+
+        {/* branch */}
+        <div>
+          <label style={labelStyle}>Branch</label>
+          <input style={inputStyle} value={branch} onChange={(e) => setBranch(e.target.value)} placeholder="feature/my-feature" required />
+        </div>
+
         <div>
           <label style={labelStyle}>Dockerfile path<Req /></label>
           <input style={inputStyle} value={dockerfilePath} onChange={(e) => setDockerfilePath(e.target.value)} placeholder="Dockerfile  (e.g. Dockerfile or docker/Dockerfile)" required />

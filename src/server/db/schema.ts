@@ -88,6 +88,7 @@ export const deployment = sqliteTable("deployments", {
     .references(() => user.id, { onDelete: "cascade" }),
   repositoryUrl: text("repository_url").notNull(),
   dockerfile: text("dockerfile").notNull(),
+  branch: text("branch"),
   port: integer("port").notNull(),
   subdomain: text("subdomain").notNull(),
   serviceName: text("service_name").notNull(),

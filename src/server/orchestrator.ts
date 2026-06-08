@@ -13,9 +13,11 @@ import { TRPCError } from '@trpc/server'
 export const buildCloneRepositoryArgs = (args: {
   repositoryUrl: string
   repositoryPath: string
+  branch?: string | null
 }): string[] => {
   return [
     'clone',
+    ...(args.branch ? ['--branch', args.branch] : []),
     args.repositoryUrl,
     args.repositoryPath,
   ]
@@ -115,7 +117,8 @@ export const deploy = async (input: TCreateDeploymentInput, userId: string): Pro
 
     const cloneRepositoryArgs = buildCloneRepositoryArgs({
       repositoryUrl: input.repositoryUrl,
-      repositoryPath: repositoryPath
+      repositoryPath: repositoryPath,
+      branch: input.branch,
     })
 
     const cloneRepositoryResult = await executeCommand('git', cloneRepositoryArgs)
@@ -213,7 +216,8 @@ export const redeploy = async (id: string, userId: string) => {
 
     const cloneRepositoryArgs = buildCloneRepositoryArgs({
       repositoryUrl: deploymentRow.repositoryUrl,
-      repositoryPath: repositoryPath
+      repositoryPath: repositoryPath,
+      branch: deploymentRow.branch,
     })
 
     const cloneRepositoryResult = await executeCommand('git', cloneRepositoryArgs)

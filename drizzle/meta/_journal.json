@@ -15,6 +15,13 @@
       "when": 1780470562472,
       "tag": "0001_confused_rictor",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1780958626226,
+      "tag": "0002_colossal_master_mold",
+      "breakpoints": true
     }
   ]
 }

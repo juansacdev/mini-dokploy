@@ -5,6 +5,7 @@ export const createDeploymentSchema = z.object({
   serviceName: z.string().min(1).max(15),
   repositoryUrl: z.url(),
   dockerfilePath: z.string().min(1),
+  branch: z.string(),
   port: z.number().int().positive().max(65535),
   customLabels: z.record(z.string(), z.string()).refine(
     (labels) => Object.keys(labels).every(key => !key.startsWith('traefik.')),
